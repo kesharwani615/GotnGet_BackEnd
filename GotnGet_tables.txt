@@ -1,0 +1,67 @@
+CREATE TABLE Messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    SenderId INT NOT NULL,
+    ReceiverId INT NOT NULL,
+    Message TEXT NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (SenderId) REFERENCES users(id),
+    FOREIGN KEY (ReceiverId) REFERENCES users(id)
+);
+
+CREATE TABLE conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE conversation_participants (
+    conversationId INT,
+    userId INT,
+    PRIMARY KEY (conversationId, UserId),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+CREATE TABLE conversation_messages (
+    conversationId INT,
+    messageId INT,
+    PRIMARY KEY (conversationId, messageId),
+    FOREIGN KEY (conversationId) REFERENCES conversations(id),
+    FOREIGN KEY (messageId) REFERENCES messages(id)
+);
+
+CREATE TABLE groups (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+-- Create the group_members table
+CREATE TABLE group_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    group_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+);
+
+-- Create the GroupMessages table
+CREATE TABLE GroupMessages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    SenderId INT NOT NULL,
+    GroupId INT NOT NULL,
+    Message TEXT NOT NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (SenderId) REFERENCES users(id),
+    FOREIGN KEY (GroupId) REFERENCES groups(id)
+);
+
+-- Create the GroupConversations table
+CREATE TABLE GroupConversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    MessageId INT NOT NULL,
+    GroupId INT NOT NULL,
+    FOREIGN KEY (MessageId) REFERENCES GroupMessages(id) ON DELETE CASCADE,
+    FOREIGN KEY (GroupId) REFERENCES groups(id) ON DELETE CASCADE
+);

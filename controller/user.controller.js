@@ -39,7 +39,7 @@ export const login = asyncHandler (async (req,res)=>{
 
     const [user] = await isUserExist(username);
 
-    // console.log(user);
+    if(!user) throw new ApiError(404,'User does not exist!');
    
     const IsPasswordCorrect =await comparePassword(password,user.PASSWORD);
 
@@ -64,6 +64,12 @@ export const login = asyncHandler (async (req,res)=>{
 })
 
 export const logout = asyncHandler (async (req,res)=>{
+
+    const user = req.user;
+
+    const queryStr = `UPDATE users SET refreshToken = ${null} WHERE id =${user.id}`
+
+    const updateUser =await query(queryStr);
 
     res.clearCookie("accessToken")
     res.clearCookie("refreshToken")
@@ -102,4 +108,43 @@ export const refreshAccessToken = asyncHandler (async (req,res)=>{
     .cookie("refreshToken",refreshToken,option)
     .json({msg:"Access Token is refreshed",LoginedUser,accessToken, refreshToken });
 });
+
+export const changeUserPassword = asyncHandler(async(req,res)=>{
+    const {oldPassword,newPassword} = req.body;
+
+    const LoggedInUser = req.user;
+
+    if(!oldPassword || !newPassword) throw new ApiError("401","all fields are required!");
+
+    const user = isUserExist(LoggedInUser.username);
+    
+    const IsPasswordCorrect = comparePassword(oldPassword,user.PASSWORD);
+
+    if(!IsPasswordCorrect) throw new ApiError(401,'Invalid user password!');
+
+    const HashedPassword = await passwordHash(newPassword);
+
+    const queryStr = `UPDATE users SET PASSWORD = ${HashedPassword} WHERE id =${user.id}`
+
+    const updateUser =await query(queryStr);
+
+    if(!updateUser) throw new ApiError(500,"something went worng, while updating password");
+
+    res.status(200).json({message:'user password updated!'})
+})
+
+export const getAllUser = asyncHandler(async (req,res)=>{
+
+    const queryStr = `SELECT id,FULL_NAME,USER_NAME,GENDER,EMAIL from users;`;
+
+    try {
+    const Alluser =await query(queryStr);
+
+    console.log("Alluser:",Alluser);
+
+    res.status(200).json({users:Alluser})
+    } catch (error) {
+        throw new ApiError(500,"something went worng while fetching all users")
+    }
+})
 

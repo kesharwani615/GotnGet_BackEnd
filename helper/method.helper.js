@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 //  {ACCESS_TOKEN,REFRESH_TOKEN}  process.env;
 
 export const validateEmail = (email) => {
-  // Regular expression for basic email validation
+  // Regular expression for basic email validation 
   const emailRegex = /^\S+@\S+\.\S{2,}$/;
   return emailRegex.test(email);
 };
@@ -18,9 +18,7 @@ export const passwordHash = async (password) => {
 
 export const isUserExist = async (username) => {
 
-  const queryStr = `SELECT * FROM users WHERE LOWER(USER_NAME) = LOWER(${db.escape(
-    username
-  )});`;
+  const queryStr = `SELECT * FROM users WHERE LOWER(USER_NAME) = LOWER(${db.escape(username)});`;
   try {
     const result = await query(queryStr);
 
@@ -68,9 +66,29 @@ export const Generate_Access_Refresh_Token = async (user) => {
     const accessToken = await Generate_Access_Token(user);
     const refreshToken = await Generate_Refresh_Token(user);
 
-    const queryStr = `UPDATE users SET refreshToken = '${refreshToken}' WHERE id = '${user.id}'`;
-
-    await query(queryStr);
-
-    return {accessToken, refreshToken};
+    try {
+      const checkingStrforQuery = `SELECT refreshToken from users where id = '${user.id}';`
+  
+      const [checkRefreshToken] =await query(checkingStrforQuery);
+  
+      if(checkRefreshToken['refreshToken']){
+  
+        const forUpdateQuery = `UPDATE users SET refreshToken = ${null} WHERE id = '${user.id}'`;
+      
+        setTimeout(()=>{
+        async function timer(){
+          await query(forUpdateQuery);
+        }
+        timer();
+        },500)
+      }
+  
+      const queryStr = `UPDATE users SET refreshToken = '${refreshToken}' WHERE id = '${user.id}'`;
+  
+      await query(queryStr);
+  
+      return {accessToken, refreshToken};
+    } catch (error) {
+      throw new ApiError(500,'something went worng while generating token');
+    }
 }
