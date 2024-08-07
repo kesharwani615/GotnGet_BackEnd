@@ -140,7 +140,7 @@ export const getAllUser = asyncHandler(async (req,res)=>{
     try {
     const Alluser =await query(queryStr);
 
-    console.log("Alluser:",Alluser);
+    // console.log("Alluser:",Alluser);
 
     res.status(200).json({users:Alluser})
     } catch (error) {

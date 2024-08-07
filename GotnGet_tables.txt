@@ -33,7 +33,9 @@ CREATE TABLE conversation_messages (
 
 CREATE TABLE groups (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    admin INT,
+    FOREIGN KEY (admin) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Create the group_members table
