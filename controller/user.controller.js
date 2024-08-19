@@ -1,4 +1,4 @@
-import { comparePassword, Generate_Access_Refresh_Token, isUserExist, passwordHash, RegisterUser, validateEmail } from '../helper/method.helper.js';
+import { comparePassword, Generate_Access_Refresh_Token, isUserExist, passwordHash, RegisterUser, sendEmail, validateEmail } from '../helper/method.helper.js';
 import query from '../helper/query.helper.js';
 import ApiError from '../utils/ApiError.js';
 import {asyncHandler} from '../utils/asyncHandler.js'
@@ -114,7 +114,7 @@ export const changeUserPassword = asyncHandler(async(req,res)=>{
 
     const LoggedInUser = req.user;
 
-    if(!oldPassword || !newPassword) throw new ApiError("401","all fields are required!");
+    if(!oldPassword || !newPassword) throw new ApiError(401,"all fields are required!");
 
     const user = isUserExist(LoggedInUser.username);
     
@@ -148,3 +148,69 @@ export const getAllUser = asyncHandler(async (req,res)=>{
     }
 })
 
+export const ForgotPassword = asyncHandler(async (req,res)=>{
+  
+ try {
+     const {email} = req.body;
+    
+     if(!email) throw new ApiError(401,"Please Provide the email");
+   
+     const queryStr = `select * from users where EMAIL = '${email}';`;
+   
+     const [user] =await query(queryStr);
+
+     if(!user) throw new ApiError(401,"Invalid email");
+     
+     const userObjectForTokenGen = {id:user.id,username:user.USER_NAME,useremail:user.EMAIL}
+     
+     const tokenForGotPassword = jwt.sign(userObjectForTokenGen,process.env.Access_Token);
+     
+     const receiveEmail = email;
+     const subject = `reset user password`;
+     const text = `http://localhost:5173/reset_password/${user.id}/${tokenForGotPassword}`;
+   
+     const sendMail =await sendEmail({receiveEmail:receiveEmail,subject:subject,text:text})
+
+     res.status(200).json({message:"Please check your email"});
+   
+ } catch (error) {
+    throw new ApiError(500,"something went worng while forgot Password");
+ }
+})
+
+export const resetPassword = asyncHandler(async(req,res)=>{
+
+    const {id, tokenForGotPassword} = req.params;
+    const {password} = req.body;
+    let queryStr;
+
+   try {
+
+     queryStr = `select * from users where id = ${id};`
+
+     const user = await query(queryStr);
+
+     if(!user) throw new Error("something went worng while reset password!");
+
+     const isTokenValid = jwt.verify(tokenForGotPassword, process.env.Access_Token);
+ 
+     console.log("user:",user,"tokendecodded:",isTokenValid);
+     if(isTokenValid.id ==! user.id) throw new Error("Invalid token for forgot password");  
+ 
+     const hashedPassword =await passwordHash(password);
+
+     console.log(hashedPassword);
+     if(!hashedPassword) throw new Error("something went worng while hashing password");
+
+     queryStr = `UPDATE users SET PASSWORD = '${hashedPassword}' WHERE id = '${id}';`;
+
+     const isUpdated =await query(queryStr);
+
+     if(!isUpdated) throw new Error('Something went worng while updating password');
+
+     res.status(200).json({message:"User Password updated!"});
+ 
+   } catch (error) {
+    throw new ApiError(500,error.message);    
+   }
+})

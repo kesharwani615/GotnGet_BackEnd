@@ -3,6 +3,7 @@ import db from "../database/db.database.js";
 import ApiError from "../utils/ApiError.js";
 import query from "./query.helper.js";
 import jwt from "jsonwebtoken";
+import nodemailer from 'nodemailer';
 
 //  {ACCESS_TOKEN,REFRESH_TOKEN}  process.env;
 
@@ -89,6 +90,43 @@ export const Generate_Access_Refresh_Token = async (user) => {
   
       return {accessToken, refreshToken};
     } catch (error) {
+      console.log("error:",error);
       throw new ApiError(500,'something went worng while generating token');
     }
+}
+
+export const sendEmail = async ({receiveEmail,subject,text}) => {
+
+  // Create a transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // You can use other services like Yahoo, Outlook, etc.
+  auth: {
+    user: 'kesharwanishivam615@gmail.com',
+    pass: 'bvhk ynoy gpmr fgdn'
+  }
+});
+
+// 2. Set up mail options
+const mailOptions = {
+  from: 'kesharwani615@gmail.com',
+  to: `${receiveEmail}`,
+  subject: `${subject}`,
+  text: `
+  Hello,
+  Hope you are doing well,
+
+  to reset your password click on this link
+  
+  ${text}
+  
+  thanks!
+  `
+};
+
+// 3. Send the email
+const send = await transporter.sendMail(mailOptions);
+
+if(!send) throw new ApiError(500,"something went worng while sending email!");
+
+return send;
 }

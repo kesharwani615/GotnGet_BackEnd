@@ -1,6 +1,7 @@
 import query from "../helper/query.helper.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from '../utils/ApiError.js'
+import { socketConnected,io } from "../socket/socket.js";
 
 export const messagesSomeone = asyncHandler(async (req, res) => { 
   const { id:ParticipantId } = req.params;
@@ -32,7 +33,7 @@ try {
       getConversation_Id = user_participants.id;
     }
   
-    console.log("getConversation:",getConversation_Id);
+    // console.log("getConversation:",getConversation_Id);
     if (!getConversation_Id) {
       queryStr = "INSERT INTO conversations () VALUES ()";
   
@@ -57,6 +58,18 @@ try {
   
       await query(queryStr);
 
+      //retrieve the message for send with socket io
+      queryStr = `select * from messages where id = ${Message_id}`;
+      
+      const messageforSocketIo = await query(queryStr);
+      
+      const receiverId = socketConnected[ParticipantId];
+      const senderId = socketConnected[userId];
+
+      //for showing message in container, so emit it from backend and listen on frontend
+      io.to(senderId).emit('new_Message',messageforSocketIo);
+      io.to(receiverId).emit('new_Message',messageforSocketIo);
+
       res.status(200).json({message:"message send successfully!"});
 } catch (error) {
   console.log("error:",error);
@@ -68,9 +81,11 @@ export const getUserMessage = asyncHandler(async (req,res)=>{
       
   const { id:ParticipantId } = req.params;
 
-  console.log("participant:",ParticipantId);
+  console.log("participant1:",ParticipantId);
 
   const userId = req.user.id;
+
+  console.log("ParticipantId,userId:",ParticipantId,userId);
 
   let getConversation_Id;
 
@@ -88,18 +103,23 @@ export const getUserMessage = asyncHandler(async (req,res)=>{
     const [user_participants] = await query(queryStr);
   
     console.log("user_participants:",user_participants);
+
+    // if(!user_participants) res.status(200).json({Allmessage:[]});
   
     if(user_participants){ 
       getConversation_Id = user_participants.id;
     }
+
+    if(!getConversation_Id) return res.status(200).json({Allmessage:[]});
     
     queryStr = `select * from messages m join conversation_messages cm  on m.id = cm.messageId where cm.conversationId = ${getConversation_Id};`;
 
     const messages = await query(queryStr);
 
-    console.log("messages:",messages)
+    // console.log("messages:",messages)
     res.status(200).json({Allmessage:messages.reverse()});
   } catch (error) {
+    console.log("error:",error);
     throw new ApiError(500,'Something went worng while fetch messages!');
   }
 });

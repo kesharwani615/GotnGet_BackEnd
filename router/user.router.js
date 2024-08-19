@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { changeUserPassword, getAllUser, login, logout, register } from "../controller/user.controller.js";
+import { changeUserPassword, ForgotPassword, getAllUser, login, logout, register, resetPassword } from "../controller/user.controller.js";
 import { verifyJwt } from "../middleware/auth.middleware.js";
+// import { upload } from "../middleware/multer.middleware.js";
 
 const router = Router();
 
@@ -8,11 +9,14 @@ router.post("/register",register);
 
 router.post('/login',login);
 
-router.get('/fetchAllUsers',getAllUser);
+router.get('/fetchAllUsers',verifyJwt,getAllUser);
 
-router.post('/logout',verifyJwt,logout);
+router.get('/logout',verifyJwt,logout);
 
-router.post('/logout',verifyJwt,changeUserPassword);
+router.post('/changePassword',verifyJwt,changeUserPassword);
 
+router.post('/forgotPassword',ForgotPassword);
+
+router.post('/resetPassword/:id/:tokenForGotPassword',resetPassword);
 
 export default router;
